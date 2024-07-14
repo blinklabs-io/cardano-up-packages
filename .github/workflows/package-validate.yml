@@ -1,0 +1,21 @@
+name: package-validate
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -e
+          curl -sLo cardano-up $(curl -s https://api.github.com/repos/blinklabs-io/cardano-up/releases/latest | grep "browser_download_url.*linux-amd64" | cut -d: -f2,3 | tr -d \")
+          chmod +x cardano-up
+      - run: ./cardano-up validate -D
