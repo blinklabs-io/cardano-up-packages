@@ -15,8 +15,8 @@ installSteps:
         - daemon
       binds:
         - '{{ .Paths.DataDir }}:/etc/dolos'
-        - '{{ .Paths.DataDir }}/data:/data'
         - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/dolos-data:/data'
         - '{{ .Paths.ContextDir }}/dolos-ipc:/ipc'
       ports:
         - "30013"
