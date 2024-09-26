@@ -61,7 +61,6 @@ _args=$(echo ${_args} | sed -e 's/^ //')
 # Run mithril-client-cli via Docker
 # We map the host filesystem into the container
 docker run \
-	-ti \
 	--rm \
 	-u $(id -u):$(id -g) \
 	-w /host$(pwd) \
@@ -70,4 +69,4 @@ docker run \
 	-e GENESIS_VERIFICATION_KEY="${GENESIS_VERIFICATION_KEY}" \
 	"${_docker_args[@]}" \
 	ghcr.io/blinklabs-io/mithril-client:{{ .Package.Version }} \
-	-c "GENESIS_VERIFICATION_KEY=\${GENESIS_VERIFICATION_KEY:-\$(</opt/cardano/config/{{ .Context.Network }}/genesis.vkey)} /bin/mithril-client ${_args}"
+	-c "GENESIS_VERIFICATION_KEY=\${GENESIS_VERIFICATION_KEY:-\$(</opt/cardano/config/{{ .Context.Network }}/genesis.vkey)} script -q -c '/bin/mithril-client ${_args}'"
