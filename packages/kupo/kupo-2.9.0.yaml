@@ -3,7 +3,7 @@ version: 2.9.0
 description: Kupo is fast, lightweight and configurable chain-index for the Cardano blockchain
 dependencies:
   - cardano-config >= 20240515
-  - cardano-node = 9.0.0
+  - cardano-node >= 9.0.0
 installSteps:
   - docker:
       containerName: kupo
