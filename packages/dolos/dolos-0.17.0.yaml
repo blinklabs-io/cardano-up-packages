@@ -2,7 +2,7 @@ name: dolos
 version: 0.17.0
 description: Dolos is a Cardano data node
 dependencies:
-  - cardano-config >= 20240515
+  - cardano-config >= 20240725
 installSteps:
   - file:
       filename: daemon.toml
