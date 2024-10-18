@@ -29,6 +29,7 @@ prune_height = 200
 byron_path = "/config/byron-genesis.json"
 shelley_path = "/config/shelley-genesis.json"
 alonzo_path = "/config/alonzo-genesis.json"
+conway_path = "/config/conway-genesis.json"
 
 [mithril]
 {{- if eq .Context.Network "mainnet" }}
@@ -48,6 +49,7 @@ genesis_key = "5b3132372c37332c3132342c3136312c362c3133372c3133312c3231332c32303
  
 [serve.grpc]
 listen_address = "[::]:50051"
+permissive_cors = true
  
 [serve.ouroboros]
 listen_path = "/ipc/dolos.socket"
@@ -55,5 +57,6 @@ magic = {{ .Context.NetworkMagic }}
  
 [logging]
 max_level = "debug"
+include_tokio = false
 include_pallas = false
 include_grpc = false
