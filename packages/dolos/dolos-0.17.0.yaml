@@ -32,6 +32,17 @@ outputs:
   - name: socket-path
     description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
     value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
+preInstallScript: |
+  set -e
+  test -e {{ .Paths.ContextDir }}/dolos-data/db/wal && exit 0
+  echo "Downloading snapshot from TxPipe's AWS account (trust me bro)"
+  mkdir -p {{ .Paths.ContextDir }}/dolos-data/db
+  cd {{ .Paths.ContextDir }}/dolos-data/db
+  curl -LO https://dolos-snapshots.s3.amazonaws.com/v0/{{ .Context.NetworkMagic }}/full/latest.tar.gz
+  echo "Extracting snapshot"
+  tar vxf latest.tar.gz
+  rm -f latest.tar.gz
+  echo "Snapshot extraction complete"
 tags:
   - docker
   - linux
