@@ -4,7 +4,7 @@ description: Cardano node software by Input Output Global
 dependencies:
   - cardano-config = 20241028
   - cardano-cli >= 10.1.1.0
-  - mithril-client >= 0.9.15
+  - mithril-client >= 0.10.5
 installSteps:
   - docker:
       containerName: cardano-node
