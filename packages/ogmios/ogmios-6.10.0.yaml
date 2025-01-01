@@ -2,8 +2,8 @@ name: ogmios
 version: 6.10.0
 description: Ogmios, a WebSocket & HTTP server for Cardano, providing a bridge between Cardano nodes and clients.
 dependencies:
-  - cardano-config = 20240725
-  - cardano-node == 9.2.0
+  - cardano-config >= 20240725
+  - cardano-node >= 10.1.0
 installSteps:
   - docker:
       containerName: ogmios
