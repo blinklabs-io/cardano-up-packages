@@ -1,0 +1,41 @@
+name: dingo
+version: 0.3.2
+description: Dingo Cardano node software by Blink Labs
+dependencies:
+  - cardano-config = 20241028
+  - cardano-cli >= 10.1.1.0
+installSteps:
+  - docker:
+      containerName: dingo
+      image: ghcr.io/blinklabs-io/dingo:0.3.2
+      command: 
+        - dingo
+        - --debug
+      env:
+        CARDANO_CONFIG: /opt/cardano/config/{{ .Context.Network }}/config.json
+        CARDANO_NETWORK: '{{ .Context.Network }}'
+      binds:
+        - '{{ .Paths.ContextDir }}/config:/opt/cardano/config'
+        - '{{ .Paths.ContextDir }}/node-ipc:/ipc'
+        - '{{ .Paths.ContextDir }}/dingo-data:/data/db'
+      ports:
+        - "3001"
+        - "9090"
+        - "12798"
+      pullOnly: false
+outputs:
+  - name: grpc
+    description: Dingo gRPC service
+    value: 'http://localhost:{{ index (index .Ports "dingo") "9090" }}'
+  - name: relay
+    description: Dingo Ouroboros Node-to-Node service
+    value: 'localhost:{{ index (index .Ports "dingo") "3001" }}'
+  - name: socket-path
+    description: Path to the Dingo Ouroboros Node-to-Client UNIX socket
+    value: '{{ .Paths.ContextDir }}/node-ipc/dingo.socket'
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
