@@ -9,6 +9,8 @@ installSteps:
   - docker:
       containerName: cardano-node
       image: ghcr.io/blinklabs-io/cardano-node:10.1.4
+      args:
+        - run
       env:
         CARDANO_DATABASE_PATH: /data/db
         CARDANO_NETWORK: '{{ .Context.Network }}'
