@@ -23,6 +23,10 @@ installSteps:
         - "9090"
         - "12798"
       pullOnly: false
+  - file:
+      binary: true
+      filename: dingo-txtop
+      source: files/txtop.sh.gotmpl
 outputs:
   - name: grpc
     description: Dingo gRPC service
