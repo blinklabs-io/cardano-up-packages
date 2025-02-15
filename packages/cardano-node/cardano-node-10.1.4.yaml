@@ -2,13 +2,13 @@ name: cardano-node
 version: 10.1.4
 description: Cardano node software by Input Output Global
 dependencies:
-  - cardano-config = 20241028
-  - cardano-cli >= 10.2.0.0
+  - cardano-config = 20250213
+  - cardano-cli >= 10.4.0.0
   - mithril-client >= 0.10.5
 installSteps:
   - docker:
       containerName: cardano-node
-      image: ghcr.io/blinklabs-io/cardano-node:10.1.4
+      image: ghcr.io/blinklabs-io/cardano-node:10.1.4-3
       args:
         - run
       env:
@@ -52,6 +52,7 @@ outputs:
 preInstallScript: |
   set -e
   test -e {{ .Paths.DataDir }}/data/db/protocolMagicId && exit 0
+  test {{ .Context.Network }} = devnet && echo "Found devnet, skipping Mithril..." && exit 0
   mithril-client cardano-db download --download-dir {{ .Paths.DataDir }}/data latest
 tags:
   - docker
