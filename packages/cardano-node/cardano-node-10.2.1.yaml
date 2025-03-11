@@ -37,8 +37,8 @@ installSteps:
       filename: txtop
       source: files/txtop.sh.gotmpl
 outputs:
-  - name: network_magic
-    description: Cardano network magic number
+  - name: network_id
+    description: Cardano network number
     value: '{{ .Context.NetworkMagic }}'
   - name: port
     description: Ouroboros Node-to-Node service
