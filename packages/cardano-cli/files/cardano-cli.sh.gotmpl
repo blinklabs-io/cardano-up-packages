@@ -22,6 +22,11 @@ done
 
 _docker_args=()
 
+if [[ $CARDANO_NODE_NETWORK_ID ]]; then
+	# Append to our Docker arguments
+	_docker_args+=( "-e" "CARDANO_NODE_NETWORK_ID=${CARDANO_NODE_NETWORK_ID}" )
+fi
+
 if [[ $CARDANO_NODE_SOCKET_PATH ]]; then
 	# Use the host socket path if specified
 	if [[ ! -e $CARDANO_NODE_SOCKET_PATH ]]; then
@@ -33,6 +38,7 @@ else
 	# Use the default context node socket if no socket path is provided
 	_docker_args+=( "-v" "{{ .Paths.ContextDir }}/node-ipc:/ipc" )
 fi
+_docker_args+=( "-e" "CARDANO_NODE_SOCKET_PATH=/ipc/node.socket" )
 
 if [[ $(uname -s) == Darwin ]]; then
        for _path in "${_darwin_allowed_paths[@]}"; do
@@ -49,7 +55,6 @@ docker run \
 	--rm \
 	-u $(id -u):$(id -g) \
 	-w /host$(pwd) \
-	-e CARDANO_NODE_SOCKET_PATH=/ipc/node.socket \
 	"${_docker_args[@]}" \
 	ghcr.io/blinklabs-io/cardano-cli:{{ .Package.Version }} \
 	"${_args[@]}"
