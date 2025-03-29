@@ -12,6 +12,8 @@ jobs:
   validate:
     name: Validate packages
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - run: |
