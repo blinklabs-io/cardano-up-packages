@@ -2,7 +2,7 @@ name: cardano-node
 version: 10.3.1
 description: Cardano node software by Input Output Global
 dependencies:
-  - cardano-config = 20250213
+  - cardano-config = 20250514
   - cardano-cli >= 10.7.0.0
   - mithril-client >= 0.12.1
 installSteps:
