@@ -2,7 +2,7 @@ name: dingo
 version: 0.11.0
 description: Dingo Cardano node software by Blink Labs
 dependencies:
-  - cardano-config = 20241028
+  - cardano-config >= 20241028
   - cardano-cli >= 10.1.1.0
 installSteps:
   - docker:
