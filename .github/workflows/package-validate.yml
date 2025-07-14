@@ -15,7 +15,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2 https://github.com/actions/checkout/releases/tag/v4.2.2
       - run: |
           set -e
           curl -sLo cardano-up $(curl -s https://api.github.com/repos/blinklabs-io/cardano-up/releases/latest | grep "browser_download_url.*linux-amd64" | cut -d: -f2,3 | tr -d \")
