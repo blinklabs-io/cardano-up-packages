@@ -1,0 +1,51 @@
+name: dolos
+version: 0.29.1
+description: Dolos is a Cardano data node
+dependencies:
+  - cardano-config >= 20241028
+installSteps:
+  - file:
+      filename: daemon.toml
+      source: files/daemon.toml.gotmpl
+  - docker:
+      containerName: dolos
+      image: ghcr.io/txpipe/dolos:v0.29.1
+      command: 
+        - dolos
+        - daemon
+      binds:
+        - '{{ .Paths.DataDir }}:/etc/dolos'
+        - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/dolos-data:/data'
+        - '{{ .Paths.ContextDir }}/dolos-ipc:/ipc'
+      ports:
+        - "30013"
+        - "50051"
+      pullOnly: false
+outputs:
+  - name: grpc
+    description: Dolos gRPC service
+    value: 'http://localhost:{{ index (index .Ports "dolos") "50051" }}'
+  - name: relay
+    description: Dolos Ouroboros Node-to-Node service
+    value: 'localhost:{{ index (index .Ports "dolos") "30013" }}'
+  - name: socket-path
+    description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
+    value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
+preInstallScript: |
+  set -e
+  test -e {{ .Paths.ContextDir }}/dolos-data/db/wal && exit 0
+  echo "Downloading snapshot from TxPipe's AWS account (trust me bro)"
+  mkdir -p {{ .Paths.ContextDir }}/dolos-data/db
+  cd {{ .Paths.ContextDir }}/dolos-data/db
+  curl -LO https://dolos-snapshots.s3-accelerate.amazonaws.com/v0/{{ .Context.NetworkMagic }}/full/latest.tar.gz
+  echo "Extracting snapshot"
+  tar vxf latest.tar.gz
+  rm -f latest.tar.gz
+  echo "Snapshot extraction complete"
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
