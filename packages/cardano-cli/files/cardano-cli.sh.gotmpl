@@ -16,7 +16,7 @@ while [[ $# -gt 0 ]]; do
 	if [[ $_arg =~ ^/ ]]; then
 		_arg="/host${_arg}"
 	fi
-	_args+=( $_arg )
+	_args+=( "${_arg}" )
 	shift
 done
 
