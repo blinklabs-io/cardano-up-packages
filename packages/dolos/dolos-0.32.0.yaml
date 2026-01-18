@@ -10,7 +10,7 @@ installSteps:
   - docker:
       containerName: dolos
       image: ghcr.io/txpipe/dolos:v0.32.0
-      command: 
+      command:
         - dolos
         - daemon
       binds:
