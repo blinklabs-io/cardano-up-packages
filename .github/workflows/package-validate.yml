@@ -16,8 +16,12 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1 https://github.com/actions/checkout/releases/tag/v6.0.1
-      - run: |
+      - name: Validate filename/content version consistency
+        run: ./scripts/validate-versions.sh
+      - name: Download cardano-up
+        run: |
           set -e
           curl -sLo cardano-up $(curl -s https://api.github.com/repos/blinklabs-io/cardano-up/releases/latest | grep "browser_download_url.*linux-amd64" | cut -d: -f2,3 | tr -d \")
           chmod +x cardano-up
-      - run: ./cardano-up validate -D
+      - name: Validate packages
+        run: ./cardano-up validate -D
