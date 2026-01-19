@@ -1,0 +1,169 @@
+name: check-versions
+
+on:
+  schedule:
+    # Run every Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  check-versions:
+    name: Check for new upstream versions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1 https://github.com/actions/checkout/releases/tag/v6.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download cardano-up
+        run: |
+          set -e
+          curl -sLo cardano-up $(curl -s https://api.github.com/repos/blinklabs-io/cardano-up/releases/latest | grep "browser_download_url.*linux-amd64" | cut -d: -f2,3 | tr -d \")
+          chmod +x cardano-up
+
+      - name: Check and create PRs for new versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Read upstream config
+          UPSTREAM_CONFIG="scripts/upstream-versions.json"
+
+          # Get list of packages from config
+          PACKAGES=$(jq -r 'keys[]' "$UPSTREAM_CONFIG")
+
+          for PACKAGE in $PACKAGES; do
+            echo "=========================================="
+            echo "Checking package: $PACKAGE"
+            echo "=========================================="
+
+            # Get upstream config for this package
+            REPO=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].repo' "$UPSTREAM_CONFIG")
+            TAG_PATTERN=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].tag_pattern' "$UPSTREAM_CONFIG")
+            VERSION_REGEX=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].version_regex // ""' "$UPSTREAM_CONFIG")
+
+            echo "  Upstream repo: $REPO"
+            echo "  Tag pattern: $TAG_PATTERN"
+
+            # Get latest upstream release tag
+            LATEST_TAG=$(gh api "repos/${REPO}/releases/latest" --jq '.tag_name' 2>/dev/null || echo "")
+
+            if [[ -z "$LATEST_TAG" ]]; then
+              echo "  WARNING: Could not fetch latest release for $REPO, skipping"
+              continue
+            fi
+
+            echo "  Latest upstream tag: $LATEST_TAG"
+
+            # Extract version from tag
+            if [[ -n "$VERSION_REGEX" ]]; then
+              # Use custom regex to extract version
+              UPSTREAM_VERSION=$(echo "$LATEST_TAG" | grep -oP "$VERSION_REGEX" | head -1 || echo "")
+              if [[ -z "$UPSTREAM_VERSION" ]]; then
+                echo "  WARNING: Could not extract version using regex, skipping"
+                continue
+              fi
+              # For regex patterns that capture groups, extract the first group
+              UPSTREAM_VERSION=$(echo "$LATEST_TAG" | sed -E "s/$VERSION_REGEX/\1/" || echo "$LATEST_TAG")
+            elif [[ -n "$TAG_PATTERN" ]]; then
+              # Remove tag pattern prefix
+              UPSTREAM_VERSION="${LATEST_TAG#$TAG_PATTERN}"
+            else
+              # Use tag as-is
+              UPSTREAM_VERSION="$LATEST_TAG"
+            fi
+
+            echo "  Upstream version: $UPSTREAM_VERSION"
+
+            # Get latest local version
+            LATEST_LOCAL_FILE=$(find "packages/${PACKAGE}" -maxdepth 1 -name "${PACKAGE}-*.yaml" -type f 2>/dev/null | sort -V | tail -1 || echo "")
+
+            if [[ -z "$LATEST_LOCAL_FILE" ]]; then
+              echo "  WARNING: No local version files found for $PACKAGE, skipping"
+              continue
+            fi
+
+            LOCAL_VERSION=$(grep -E '^version:' "$LATEST_LOCAL_FILE" | head -1 | awk '{print $2}')
+            echo "  Local version: $LOCAL_VERSION"
+
+            # Compare versions (simple string comparison - may need improvement for complex version schemes)
+            if [[ "$UPSTREAM_VERSION" == "$LOCAL_VERSION" ]]; then
+              echo "  Already up to date"
+              continue
+            fi
+
+            # Check if we already have this version
+            NEW_FILE="packages/${PACKAGE}/${PACKAGE}-${UPSTREAM_VERSION}.yaml"
+            if [[ -f "$NEW_FILE" ]]; then
+              echo "  Version $UPSTREAM_VERSION already exists locally"
+              continue
+            fi
+
+            echo "  New version available: $UPSTREAM_VERSION"
+
+            # Check if a PR already exists for this version
+            BRANCH_NAME="chore/${PACKAGE}-${UPSTREAM_VERSION}"
+            EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --json number --jq '.[0].number' 2>/dev/null || echo "")
+            if [[ -n "$EXISTING_PR" ]]; then
+              echo "  PR #$EXISTING_PR already exists for this version, skipping"
+              continue
+            fi
+
+            # Create new version
+            echo "  Creating new version file..."
+            ./scripts/add-version.sh "$PACKAGE" "$UPSTREAM_VERSION"
+
+            # Validate the new package
+            echo "  Validating new package..."
+            if ! ./cardano-up validate -D 2>&1; then
+              echo "  WARNING: Validation failed for $PACKAGE $UPSTREAM_VERSION, skipping"
+              git checkout -- "packages/${PACKAGE}/" || true
+              continue
+            fi
+
+            # Create branch and commit
+            echo "  Creating branch and commit..."
+            git checkout -b "$BRANCH_NAME"
+            git add "packages/${PACKAGE}/${PACKAGE}-${UPSTREAM_VERSION}.yaml"
+            git commit -m "chore: ${PACKAGE} ${UPSTREAM_VERSION}"
+
+            # Push branch
+            echo "  Pushing branch..."
+            git push -u origin "$BRANCH_NAME"
+
+            # Create PR
+            echo "  Creating PR..."
+            PR_BODY="## Summary
+          - Updates ${PACKAGE} to version ${UPSTREAM_VERSION}
+          - Upstream release: https://github.com/${REPO}/releases/tag/${LATEST_TAG}
+
+          ## Test plan
+          - [ ] CI validation passes
+          - [ ] Manual testing if needed
+
+          🤖 Generated automatically by check-versions workflow"
+
+            gh pr create \
+              --title "chore: ${PACKAGE} ${UPSTREAM_VERSION}" \
+              --body "$PR_BODY" \
+              --base main \
+              --head "$BRANCH_NAME"
+
+            # Return to main branch for next package
+            git checkout main
+
+            echo "  PR created successfully!"
+          done
+
+          echo ""
+          echo "=========================================="
+          echo "Version check complete"
+          echo "=========================================="
