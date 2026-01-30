@@ -12,9 +12,9 @@ installSteps:
         - kupo
         - --node-socket
         - /ipc/node.socket
-        - --host 
+        - --host
         - 0.0.0.0
-        - --port 
+        - --port
         - '1442'
         - --log-level
         - Info
