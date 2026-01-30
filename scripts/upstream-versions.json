@@ -33,7 +33,8 @@
   "kupo": {
     "repo": "CardanoSolutions/kupo",
     "tag_pattern": "v",
-    "version_prefix": ""
+    "version_prefix": "",
+    "docker_image": "cardanosolutions/kupo"
   },
   "mithril-client": {
     "repo": "input-output-hk/mithril",

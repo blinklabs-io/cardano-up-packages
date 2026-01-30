@@ -49,6 +49,7 @@ jobs:
             REPO=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].repo' "$UPSTREAM_CONFIG")
             TAG_PATTERN=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].tag_pattern' "$UPSTREAM_CONFIG")
             VERSION_REGEX=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].version_regex // ""' "$UPSTREAM_CONFIG")
+            DOCKER_IMAGE=$(jq -r --arg pkg "$PACKAGE" '.[$pkg].docker_image // ""' "$UPSTREAM_CONFIG")
 
             echo "  Upstream repo: $REPO"
             echo "  Tag pattern: $TAG_PATTERN"
@@ -79,6 +80,25 @@ jobs:
             else
               # Use tag as-is
               UPSTREAM_VERSION="$LATEST_TAG"
+            fi
+
+            # If docker_image is configured, look up the actual image tag version
+            # This handles cases where GitHub releases use short versions (v2.11)
+            # but Docker images use full semver (v2.11.0)
+            if [[ -n "$DOCKER_IMAGE" ]]; then
+              echo "  Looking up Docker image tags for: $DOCKER_IMAGE"
+              # Query Docker Hub for tags matching the release version
+              DOCKER_TAG=$(curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=100" \
+                | jq -r --arg prefix "${TAG_PATTERN}${UPSTREAM_VERSION}" \
+                  '.results[].name | select(startswith($prefix))' \
+                | sort -V | tail -1 || echo "")
+              if [[ -n "$DOCKER_TAG" ]]; then
+                # Extract version from docker tag using same pattern
+                UPSTREAM_VERSION="${DOCKER_TAG#$TAG_PATTERN}"
+                echo "  Found Docker tag: $DOCKER_TAG -> version $UPSTREAM_VERSION"
+              else
+                echo "  WARNING: No matching Docker tag found for ${TAG_PATTERN}${UPSTREAM_VERSION}"
+              fi
             fi
 
             echo "  Upstream version: $UPSTREAM_VERSION"
