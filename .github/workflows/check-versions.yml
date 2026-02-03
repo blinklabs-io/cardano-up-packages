@@ -64,7 +64,8 @@ jobs:
               GHCR_PKG="${GHCR_IMAGE#*/}"
 
               # Query GHCR for tags, filter to semver-like versions, sort and get latest
-              UPSTREAM_VERSION=$(gh api "/orgs/${GHCR_ORG}/packages/container/${GHCR_PKG}/versions" \
+              # Use --paginate to fetch all pages since the API returns paginated results
+              UPSTREAM_VERSION=$(gh api "/orgs/${GHCR_ORG}/packages/container/${GHCR_PKG}/versions" --paginate \
                 --jq '.[].metadata.container.tags[]' 2>/dev/null \
                 | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
                 | sort -V | tail -1 || echo "")
