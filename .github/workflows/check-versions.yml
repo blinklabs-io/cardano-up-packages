@@ -26,7 +26,7 @@ jobs:
 
       - name: Check and create PRs for new versions
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ORG_PROJECT_PAT }}
         run: |
           set -euo pipefail
 

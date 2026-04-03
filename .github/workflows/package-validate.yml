@@ -6,7 +6,7 @@ on:
       - v*
     branches:
       - main
-  pull_request_target:
+  pull_request:
 
 jobs:
   validate:
