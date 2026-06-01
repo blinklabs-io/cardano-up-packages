@@ -157,6 +157,13 @@ jobs:
 
             BRANCH_NAME="chore/${PACKAGE}-${UPSTREAM_VERSION}"
 
+            # Skip if an open PR already exists for this version
+            EXISTING_PR=$(gh pr list --head "$BRANCH_NAME" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+            if [[ -n "$EXISTING_PR" ]]; then
+              echo "  PR #$EXISTING_PR already open for $BRANCH_NAME, skipping"
+              continue
+            fi
+
             # Create new version
             echo "  Creating new version file..."
             ./scripts/add-version.sh "$PACKAGE" "$UPSTREAM_VERSION"
@@ -175,9 +182,17 @@ jobs:
             git add "packages/${PACKAGE}/${PACKAGE}-${UPSTREAM_VERSION}.yaml"
             git commit -m "chore: ${PACKAGE} ${UPSTREAM_VERSION}"
 
+            # If a stale remote branch exists from a previous failed run
+            # (no open PR was found above), delete it so we can push cleanly
+            # without force-pushing over potential manual commits.
+            if git ls-remote --exit-code --heads origin "$BRANCH_NAME" >/dev/null 2>&1; then
+              echo "  Stale remote branch $BRANCH_NAME found with no open PR, deleting"
+              git push origin --delete "$BRANCH_NAME"
+            fi
+
             # Push branch
             echo "  Pushing branch..."
-            git push --force-with-lease -u origin "$BRANCH_NAME"
+            git push -u origin "$BRANCH_NAME"
 
             # Create PR
             echo "  Creating PR..."
@@ -203,12 +218,16 @@ jobs:
           🤖 Generated automatically by check-versions workflow"
             fi
 
-            if ! PR_CREATE_OUTPUT=$(gh pr create \
+            PR_CREATED=false
+            if PR_CREATE_OUTPUT=$(gh pr create \
               --title "chore: ${PACKAGE} ${UPSTREAM_VERSION}" \
               --body "$PR_BODY" \
               --base main \
               --head "$BRANCH_NAME" 2>&1); then
-              if echo "$PR_CREATE_OUTPUT" | grep -qiE 'already exists|pull request already exists'; then
+              echo "$PR_CREATE_OUTPUT"
+              PR_CREATED=true
+            else
+              if echo "$PR_CREATE_OUTPUT" | grep -qi 'already exists'; then
                 echo "  PR already exists for $BRANCH_NAME, skipping create"
               else
                 echo "$PR_CREATE_OUTPUT"
@@ -219,7 +238,9 @@ jobs:
             # Return to main branch for next package
             git checkout main
 
-            echo "  PR created successfully!"
+            if [[ "$PR_CREATED" == "true" ]]; then
+              echo "  PR created successfully!"
+            fi
           done
 
           echo ""
