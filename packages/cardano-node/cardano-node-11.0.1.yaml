@@ -2,9 +2,9 @@ name: cardano-node
 version: 11.0.1
 description: Cardano node software by Input Output Global
 dependencies:
-  - cardano-config = 20250917
-  - cardano-cli >= 10.8.0.0
-  - mithril-client >= 0.12.11
+  - cardano-config = 20260430
+  - cardano-cli >= 11.0.0.0
+  - mithril-client >= 0.12.38
 installSteps:
   - docker:
       containerName: cardano-node
