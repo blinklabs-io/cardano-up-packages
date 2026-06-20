@@ -14,13 +14,19 @@ installSteps:
         CARDANO_CONFIG: /opt/cardano/config/{{ .Context.Network }}/config.json
         CARDANO_NETWORK: '{{ .Context.Network }}'
         CARDANO_PRIVATE_BIND_ADDR: '0.0.0.0'
+        DINGO_STORAGE_MODE: api
+        DINGO_BLOCKFROST_PORT: '3000'
+        DINGO_MESH_PORT: '8080'
+        DINGO_UTXORPC_PORT: '9090'
       binds:
         - '{{ .Paths.ContextDir }}/config:/opt/cardano/config'
         - '{{ .Paths.ContextDir }}/node-ipc:/ipc'
         - '{{ .Paths.ContextDir }}/dingo-data:/data/db'
       ports:
+        - "3000"
         - "3001"
         - "3002"
+        - "8080"
         - "9090"
         - "12798"
       pullOnly: false
@@ -33,9 +39,15 @@ installSteps:
       filename: dingo-txtop
       source: files/txtop.sh.gotmpl
 outputs:
+  - name: blockfrost
+    description: Dingo Blockfrost-compatible REST API
+    value: 'http://localhost:{{ index (index .Ports "dingo") "3000" }}'
   - name: grpc
     description: Dingo gRPC service
     value: 'http://localhost:{{ index (index .Ports "dingo") "9090" }}'
+  - name: mesh
+    description: Dingo Mesh (Rosetta) REST API
+    value: 'http://localhost:{{ index (index .Ports "dingo") "8080" }}'
   - name: relay
     description: Dingo Ouroboros Node-to-Node service
     value: 'localhost:{{ index (index .Ports "dingo") "3001" }}'
