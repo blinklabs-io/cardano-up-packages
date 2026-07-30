@@ -2,11 +2,11 @@ name: dolos
 version: 1.6.0
 description: Dolos is a Cardano data node
 dependencies:
-  - cardano-config >= 20241028
+  - cardano-config >= 20251128
 installSteps:
   - file:
       filename: daemon.toml
-      source: files/daemon.toml.gotmpl
+      source: files/daemon-v3.toml.gotmpl
   - docker:
       containerName: dolos
       image: ghcr.io/txpipe/dolos:v1.6.0
