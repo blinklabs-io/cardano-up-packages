@@ -1,0 +1,58 @@
+name: dolos
+version: 1.6.0
+description: Dolos is a Cardano data node
+dependencies:
+  - cardano-config >= 20241028
+installSteps:
+  - file:
+      filename: daemon.toml
+      source: files/daemon.toml.gotmpl
+  - docker:
+      containerName: dolos
+      image: ghcr.io/txpipe/dolos:v1.6.0
+      command:
+        - dolos
+        - daemon
+      binds:
+        - '{{ .Paths.DataDir }}:/etc/dolos'
+        - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/dolos-data:/data'
+        - '{{ .Paths.ContextDir }}/dolos-ipc:/ipc'
+      ports:
+        - "30013"
+        - "50051"
+        - "3000"
+      pullOnly: false
+outputs:
+  - name: grpc
+    description: Dolos gRPC (UTxORPC) service
+    value: 'http://localhost:{{ index (index .Ports "dolos") "50051" }}'
+  - name: minibf
+    description: Dolos Blockfrost-compatible (minibf) HTTP API
+    value: 'http://localhost:{{ index (index .Ports "dolos") "3000" }}'
+  - name: relay
+    description: Dolos Ouroboros Node-to-Node service
+    value: 'localhost:{{ index (index .Ports "dolos") "30013" }}'
+  - name: socket-path
+    description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
+    value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
+preInstallScript: |
+  set -e
+  # Skip the snapshot download if storage has already been bootstrapped
+  test -e {{ .Paths.ContextDir }}/dolos-data/wal && exit 0
+  echo "Downloading snapshot from TxPipe"
+  mkdir -p {{ .Paths.ContextDir }}/dolos-data
+  cd {{ .Paths.ContextDir }}/dolos-data
+  rm -f latest.tar.gz
+  curl --fail --location --retry 3 --retry-delay 5 --output latest.tar.gz \
+    https://dolos-snapshots.txpipe.cloud/v3/{{ .Context.NetworkMagic }}/full/latest.tar.gz
+  echo "Extracting snapshot"
+  tar xzf latest.tar.gz
+  rm -f latest.tar.gz
+  echo "Snapshot extraction complete"
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
