@@ -1,0 +1,67 @@
+name: dolos
+version: 1.6.0
+description: Dolos is a Cardano data node
+dependencies:
+  - cardano-config >= 20251128
+installSteps:
+  - file:
+      filename: daemon.toml
+      source: files/daemon-v3.toml.gotmpl
+  - docker:
+      containerName: dolos
+      image: ghcr.io/txpipe/dolos:v1.6.0
+      command:
+        - dolos
+        - daemon
+      binds:
+        - '{{ .Paths.DataDir }}:/etc/dolos'
+        - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/dolos-data:/data'
+        - '{{ .Paths.ContextDir }}/dolos-ipc:/ipc'
+      ports:
+        - "30013"
+        - "50051"
+        - "3000"
+      pullOnly: false
+outputs:
+  - name: grpc
+    description: Dolos gRPC (UTxORPC) service
+    value: 'http://localhost:{{ index (index .Ports "dolos") "50051" }}'
+  - name: minibf
+    description: Dolos Blockfrost-compatible (minibf) HTTP API
+    value: 'http://localhost:{{ index (index .Ports "dolos") "3000" }}'
+  - name: relay
+    description: Dolos Ouroboros Node-to-Node service
+    value: 'localhost:{{ index (index .Ports "dolos") "30013" }}'
+  - name: socket-path
+    description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
+    value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
+preInstallScript: |
+  set -e
+  DATA_DIR={{ .Paths.ContextDir }}/dolos-data
+  # Skip the snapshot download if the node storage is already populated
+  test -e "$DATA_DIR/wal" && exit 0
+  echo "Downloading snapshot from TxPipe"
+  # Download and extract into a staging directory so an interrupted run never
+  # leaves a partial snapshot in the live storage path (which would otherwise
+  # be picked up on the next install and start Dolos with incomplete data).
+  STAGING_DIR="$DATA_DIR.tmp"
+  rm -rf "$STAGING_DIR"
+  mkdir -p "$STAGING_DIR"
+  cd "$STAGING_DIR"
+  curl --fail --location --retry 3 --retry-delay 5 --output latest.tar.gz \
+    https://dolos-snapshots.txpipe.cloud/v3/{{ .Context.NetworkMagic }}/full/latest.tar.gz
+  echo "Extracting snapshot"
+  tar xzf latest.tar.gz
+  rm -f latest.tar.gz
+  # Atomically promote the fully-extracted snapshot into place only after tar
+  # has completed successfully.
+  rm -rf "$DATA_DIR"
+  mv "$STAGING_DIR" "$DATA_DIR"
+  echo "Snapshot extraction complete"
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
