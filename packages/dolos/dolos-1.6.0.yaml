@@ -38,17 +38,26 @@ outputs:
     value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
 preInstallScript: |
   set -e
-  # Skip the snapshot download if storage has already been bootstrapped
-  test -e {{ .Paths.ContextDir }}/dolos-data/wal && exit 0
+  DATA_DIR={{ .Paths.ContextDir }}/dolos-data
+  # Skip the snapshot download if the node storage is already populated
+  test -e "$DATA_DIR/wal" && exit 0
   echo "Downloading snapshot from TxPipe"
-  mkdir -p {{ .Paths.ContextDir }}/dolos-data
-  cd {{ .Paths.ContextDir }}/dolos-data
-  rm -f latest.tar.gz
+  # Download and extract into a staging directory so an interrupted run never
+  # leaves a partial snapshot in the live storage path (which would otherwise
+  # be picked up on the next install and start Dolos with incomplete data).
+  STAGING_DIR="$DATA_DIR.tmp"
+  rm -rf "$STAGING_DIR"
+  mkdir -p "$STAGING_DIR"
+  cd "$STAGING_DIR"
   curl --fail --location --retry 3 --retry-delay 5 --output latest.tar.gz \
     https://dolos-snapshots.txpipe.cloud/v3/{{ .Context.NetworkMagic }}/full/latest.tar.gz
   echo "Extracting snapshot"
   tar xzf latest.tar.gz
   rm -f latest.tar.gz
+  # Atomically promote the fully-extracted snapshot into place only after tar
+  # has completed successfully.
+  rm -rf "$DATA_DIR"
+  mv "$STAGING_DIR" "$DATA_DIR"
   echo "Snapshot extraction complete"
 tags:
   - docker
