@@ -14,7 +14,7 @@ postInstallScript: |
   set -e
   trap 'docker rm -f {{ .Package.Name }}-{{ .Package.ShortName }} 2>/dev/null || true' EXIT
   mkdir -p {{ .Paths.ContextDir }}/config
-  docker create --name {{ .Package.Name }}-{{ .Package.ShortName }} ghcr.io/blinklabs-io/cardano-configs:20260707-1 bash
+  docker create --name {{ .Package.Name }}-{{ .Package.ShortName }} ghcr.io/blinklabs-io/cardano-configs:20260707-2 bash
   docker cp {{ .Package.Name }}-{{ .Package.ShortName }}:/config/{{ .Context.Network }}/ {{ .Paths.ContextDir }}/config/
   docker rm {{ .Package.Name }}-{{ .Package.ShortName }}
 tags:
