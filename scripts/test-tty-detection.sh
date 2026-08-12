@@ -61,7 +61,7 @@ run_with_pty() {
       script -q /dev/null "$1"
       ;;
     *)
-      script -qc "$1" /dev/null
+      script -qc "exec $(printf '%q' "$1")" /dev/null
       ;;
   esac
 }
