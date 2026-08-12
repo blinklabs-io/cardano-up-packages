@@ -50,8 +50,13 @@ fi
 
 # Run cardano-cli via Docker
 # We map the host filesystem and node socket into the container
+_tty_flag=()
+if [[ -t 0 && -t 1 ]]; then
+	_tty_flag=(-t)
+fi
+
 docker run \
-	-ti \
+	-i "${_tty_flag[@]}" \
 	--rm \
 	-u $(id -u):$(id -g) \
 	-w /host$(pwd) \

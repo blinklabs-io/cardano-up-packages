@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
 # Run nview
+_tty_flag=()
+if [[ -t 0 && -t 1 ]]; then
+	_tty_flag=(-t)
+fi
+
 docker exec \
-	-ti \
+	-i "${_tty_flag[@]}" \
 	{{ .Package.Name }}-cardano-node \
 	nview ${@}
