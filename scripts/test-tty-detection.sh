@@ -51,6 +51,21 @@ forced_tty() {
   grep -qE '^-[a-zA-Z]*t[a-zA-Z]*$' "$1" 2>/dev/null
 }
 
+# Run $1 under a real pty, logging the typescript to /dev/null. BSD/macOS
+# `script` takes the command positionally; util-linux `script` requires -c
+# and otherwise silently ignores extra positional args (exit 0, command
+# never runs) instead of erroring, so the two forms are not interchangeable.
+run_with_pty() {
+  case "$(uname -s)" in
+    Darwin|*BSD*)
+      script -q /dev/null "$1"
+      ;;
+    *)
+      script -qc "$1" /dev/null
+      ;;
+  esac
+}
+
 FAIL=0
 
 check() {
@@ -62,9 +77,15 @@ check() {
   # Case 1: non-interactive invocation (stdin/stdout not a tty)
   export DOCKER_STUB_LOG="$WORKDIR/args-noninteractive.log"
   : > "$DOCKER_STUB_LOG"
-  "$rendered" </dev/null >/dev/null 2>&1 || true
+  set +e
+  "$rendered" </dev/null >/dev/null 2>&1
+  local rc=$?
+  set -e
 
-  if forced_tty "$DOCKER_STUB_LOG"; then
+  if [[ ! -s "$DOCKER_STUB_LOG" ]]; then
+    echo "ERROR [$template] non-interactive run never reached docker (exit $rc) — cannot judge -t"
+    FAIL=1
+  elif forced_tty "$DOCKER_STUB_LOG"; then
     echo "FAIL [$template] requested -t with no TTY attached (would break in cron/CI/pipes)"
     FAIL=1
   else
@@ -74,9 +95,15 @@ check() {
   # Case 2: interactive invocation (real pty via `script`)
   export DOCKER_STUB_LOG="$WORKDIR/args-interactive.log"
   : > "$DOCKER_STUB_LOG"
-  script -q /dev/null "$rendered" >/dev/null 2>&1 || true
+  set +e
+  run_with_pty "$rendered" >/dev/null 2>&1
+  rc=$?
+  set -e
 
-  if forced_tty "$DOCKER_STUB_LOG"; then
+  if [[ ! -s "$DOCKER_STUB_LOG" ]]; then
+    echo "ERROR [$template] interactive run never reached docker (exit $rc) — cannot judge -t"
+    FAIL=1
+  elif forced_tty "$DOCKER_STUB_LOG"; then
     echo "PASS [$template] -t requested when a TTY is attached"
   else
     echo "FAIL [$template] did not request -t despite a TTY being attached (interactive UX regression)"
