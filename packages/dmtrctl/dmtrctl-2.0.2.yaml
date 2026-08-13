@@ -1,0 +1,13 @@
+name: dmtrctl
+version: 2.0.2
+description: Command-line utility for interacting with the Demeter platform
+installSteps:
+  - file:
+      binary: true
+      filename: dmtrctl
+      source: files/dmtrctl.sh.gotmpl
+tags:
+  - linux
+  - darwin
+  - amd64
+  - arm64

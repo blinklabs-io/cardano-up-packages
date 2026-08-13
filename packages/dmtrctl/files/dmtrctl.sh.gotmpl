@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+_version="{{ .Package.Version }}"
+_base_url="https://github.com/demeter-run/cli/releases/download/v${_version}"
+
+_os=$(uname -s)
+_arch=$(uname -m)
+
+case ${_os} in
+	Darwin) _os_triple=apple-darwin ;;
+	Linux) _os_triple=unknown-linux-gnu ;;
+	*)
+		echo "Unsupported OS for dmtrctl: ${_os}" >&2
+		exit 1
+		;;
+esac
+
+case ${_arch} in
+	arm64|aarch64) _arch_triple=aarch64 ;;
+	x86_64|amd64) _arch_triple=x86_64 ;;
+	*)
+		echo "Unsupported architecture for dmtrctl: ${_arch}" >&2
+		exit 1
+		;;
+esac
+
+_target="${_arch_triple}-${_os_triple}"
+_archive="dmtrctl-${_target}.tar.xz"
+
+# Cache the extracted binary per-target, since the same install could
+# theoretically be shared across machines with different architectures
+_cache_dir="{{ .Paths.CacheDir }}/${_target}"
+_bin_path="${_cache_dir}/dmtrctl"
+
+if [[ ! -x ${_bin_path} ]]; then
+	mkdir -p "${_cache_dir}"
+
+	_tmp_dir=$(mktemp -d)
+	trap 'rm -rf "${_tmp_dir}"' EXIT
+
+	if ! curl -fsSL -o "${_tmp_dir}/${_archive}" "${_base_url}/${_archive}"; then
+		echo "Failed to download ${_archive}" >&2
+		exit 1
+	fi
+	if ! curl -fsSL -o "${_tmp_dir}/${_archive}.sha256" "${_base_url}/${_archive}.sha256"; then
+		echo "Failed to download ${_archive}.sha256" >&2
+		exit 1
+	fi
+
+	_expected_sha=$(awk '{print $1}' "${_tmp_dir}/${_archive}.sha256")
+	if command -v sha256sum >/dev/null 2>&1; then
+		_actual_sha=$(sha256sum "${_tmp_dir}/${_archive}" | awk '{print $1}')
+	elif command -v shasum >/dev/null 2>&1; then
+		_actual_sha=$(shasum -a 256 "${_tmp_dir}/${_archive}" | awk '{print $1}')
+	else
+		echo "No sha256sum or shasum utility found to verify download" >&2
+		exit 1
+	fi
+	if [[ ${_actual_sha} != "${_expected_sha}" ]]; then
+		echo "Checksum verification failed for ${_archive}" >&2
+		exit 1
+	fi
+
+	tar -xJf "${_tmp_dir}/${_archive}" -C "${_tmp_dir}"
+	mv "${_tmp_dir}/dmtrctl-${_target}/dmtrctl" "${_bin_path}"
+	chmod +x "${_bin_path}"
+fi
+
+# Run dmtrctl directly on the host. It's a native binary with no Docker
+# dependency, so functionality like `ports tunnel` (local port-forwarding)
+# works without any container networking to contend with.
+exec "${_bin_path}" "$@"
