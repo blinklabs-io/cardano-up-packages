@@ -1,27 +1,14 @@
-name: package-validate
+# Generated automatically by org-governance-bot. Do not edit manually.
+name: "package-validate"
 
 on:
+  pull_request:
   push:
-    tags:
-      - v*
     branches:
       - main
-  pull_request:
+    tags:
+      - v*
 
 jobs:
-  validate:
-    name: Validate packages
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 https://github.com/actions/checkout/releases/tag/v7.0.1
-      - name: Validate filename/content version consistency
-        run: ./scripts/validate-versions.sh
-      - name: Download cardano-up
-        run: |
-          set -e
-          curl -sLo cardano-up $(curl -s https://api.github.com/repos/blinklabs-io/cardano-up/releases/latest | grep "browser_download_url.*linux-amd64" | cut -d: -f2,3 | tr -d \")
-          chmod +x cardano-up
-      - name: Validate packages
-        run: ./cardano-up validate -D
+  orchestrate:
+    uses: blinklabs-io/actions/.github/workflows/reuseable-package-validate.yml@main
