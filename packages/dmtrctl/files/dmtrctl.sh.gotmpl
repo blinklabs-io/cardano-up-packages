@@ -61,9 +61,18 @@ if [[ ! -x ${_bin_path} ]]; then
 		exit 1
 	fi
 
-	tar -xJf "${_tmp_dir}/${_archive}" -C "${_tmp_dir}"
-	mv "${_tmp_dir}/dmtrctl-${_target}/dmtrctl" "${_bin_path}"
-	chmod +x "${_bin_path}"
+	if ! tar -xJf "${_tmp_dir}/${_archive}" -C "${_tmp_dir}"; then
+		echo "Failed to extract ${_archive}" >&2
+		exit 1
+	fi
+	if ! mv "${_tmp_dir}/dmtrctl-${_target}/dmtrctl" "${_bin_path}"; then
+		echo "Failed to install extracted dmtrctl binary to ${_bin_path}" >&2
+		exit 1
+	fi
+	if ! chmod +x "${_bin_path}"; then
+		echo "Failed to make ${_bin_path} executable" >&2
+		exit 1
+	fi
 fi
 
 # Run dmtrctl directly on the host. It's a native binary with no Docker
