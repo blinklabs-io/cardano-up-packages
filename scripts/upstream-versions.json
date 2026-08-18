@@ -25,6 +25,11 @@
     "tag_pattern": "v",
     "version_prefix": ""
   },
+  "dmtrctl": {
+    "repo": "demeter-run/cli",
+    "tag_pattern": "v",
+    "version_prefix": ""
+  },
   "dolos": {
     "repo": "txpipe/dolos",
     "tag_pattern": "v",
