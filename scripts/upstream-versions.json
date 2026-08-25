@@ -20,6 +20,11 @@
     "tag_pattern": "v",
     "version_prefix": ""
   },
+  "cardano-up": {
+    "repo": "blinklabs-io/cardano-up",
+    "tag_pattern": "v",
+    "version_prefix": ""
+  },
   "dingo": {
     "repo": "blinklabs-io/dingo",
     "tag_pattern": "v",
