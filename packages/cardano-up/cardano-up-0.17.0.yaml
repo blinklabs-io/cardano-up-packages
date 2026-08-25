@@ -1,0 +1,13 @@
+name: cardano-up
+version: 0.17.0
+description: Command line utility for managing Cardano services
+installSteps:
+  - file:
+      binary: true
+      filename: cardano-up
+      url: https://github.com/blinklabs-io/cardano-up/releases/download/v{{ .Package.Version }}/cardano-up-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}
+tags:
+  - linux
+  - darwin
+  - amd64
+  - arm64
