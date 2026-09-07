@@ -4,7 +4,7 @@ description: Configuration files for the Cardano node by Input Output Global
 installSteps:
   - docker:
       containerName: cardano-configs
-      image: ghcr.io/blinklabs-io/cardano-configs:20260829-2
+      image: ghcr.io/blinklabs-io/cardano-configs:20260829-1
       pullOnly: true
 outputs:
   - name: base
