@@ -12,6 +12,7 @@ installSteps:
       archive: tar.gz
       archivePath: dingo
   - file:
+      binary: true
       filename: .nview-bin
       url: 'https://github.com/blinklabs-io/nview/releases/download/v0.15.0/nview-v0.15.0-{{ .System.OS }}-{{ .System.ARCH }}'
   - file:
@@ -23,6 +24,7 @@ installSteps:
         export CARDANO_NODE_BINARY="${CARDANO_NODE_BINARY:-dingo}"
         exec "{{ .Paths.DataDir }}/.nview-bin" "${@}"
   - file:
+      binary: true
       filename: .txtop-bin
       url: 'https://github.com/blinklabs-io/txtop/releases/download/v0.16.0/txtop-v0.16.0-{{ .System.OS }}-{{ .System.ARCH }}'
   - file:
