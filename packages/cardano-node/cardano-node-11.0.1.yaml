@@ -11,6 +11,9 @@ installSteps:
       image: ghcr.io/blinklabs-io/cardano-node:11.0.1
       args:
         - run
+        - --grpc-enable
+        - --grpc-socket-path
+        - /ipc/rpc.sock
       env:
         CARDANO_DATABASE_PATH: /data/db
         CARDANO_NETWORK: '{{ .Context.Network }}'
@@ -49,6 +52,9 @@ outputs:
   - name: socket_path
     description: Path to the Cardano Node UNIX socket
     value: '{{ .Paths.ContextDir }}/node-ipc/node.socket'
+  - name: grpc_socket_path
+    description: Path to the Cardano Node gRPC UNIX socket
+    value: '{{ .Paths.ContextDir }}/node-ipc/rpc.sock'
 preInstallScript: |
   set -e
   test -e {{ .Paths.DataDir }}/data/db/protocolMagicId && exit 0
