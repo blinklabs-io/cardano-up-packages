@@ -90,6 +90,5 @@ preStopScript: |
   fi
 tags:
   - linux
-  - darwin
   - amd64
   - arm64
