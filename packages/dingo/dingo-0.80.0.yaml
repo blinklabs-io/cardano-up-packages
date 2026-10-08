@@ -58,33 +58,49 @@ postStartScript: |
   set -e
   mkdir -p "{{ .Paths.ContextDir }}/config/{{ .Context.Network }}" "{{ .Paths.ContextDir }}/node-ipc" "{{ .Paths.ContextDir }}/dingo-data"
   _pid_file="{{ .Paths.ContextDir }}/dingo.pid"
-  if [ -f "${_pid_file}" ] && kill -0 "$(cat "${_pid_file}")" 2>/dev/null; then
+  _dingo_bin="{{ .Paths.DataDir }}/dingo"
+  _database_path="{{ .Paths.ContextDir }}/dingo-data"
+  _is_dingo_pid() {
+    case "$1" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$(readlink -f "/proc/$1/exe" 2>/dev/null)" = "$(readlink -f "${_dingo_bin}")" ] \
+      && tr '\0' '\n' < "/proc/$1/environ" 2>/dev/null | grep -Fxq "CARDANO_DATABASE_PATH=${_database_path}"
+  }
+  _pid="$(cat "${_pid_file}" 2>/dev/null || true)"
+  if _is_dingo_pid "${_pid}"; then
     echo "dingo is already running"
   else
     export CARDANO_CONFIG="{{ .Paths.ContextDir }}/config/{{ .Context.Network }}/config.json"
     export CARDANO_NETWORK="{{ .Context.Network }}"
     export CARDANO_DATABASE_PATH="{{ .Paths.ContextDir }}/dingo-data"
     export CARDANO_SOCKET_PATH="{{ .Paths.ContextDir }}/node-ipc/dingo.socket"
-    export CARDANO_PRIVATE_BIND_ADDR="0.0.0.0"
+    export CARDANO_BIND_ADDR="0.0.0.0"
+    export CARDANO_PRIVATE_BIND_ADDR="127.0.0.1"
     export DINGO_STORAGE_MODE="api"
     export DINGO_BLOCKFROST_PORT="3000"
     export DINGO_MESH_PORT="8080"
     export DINGO_UTXORPC_PORT="9090"
-    nohup "{{ .Paths.DataDir }}/dingo" serve >> "{{ .Paths.ContextDir }}/dingo.log" 2>&1 &
+    nohup "${_dingo_bin}" serve >> "{{ .Paths.ContextDir }}/dingo.log" 2>&1 &
     echo $! > "${_pid_file}"
   fi
 preStopScript: |
+  _dingo_bin="{{ .Paths.DataDir }}/dingo"
+  _database_path="{{ .Paths.ContextDir }}/dingo-data"
   _pid_file="{{ .Paths.ContextDir }}/dingo.pid"
+  _is_dingo_pid() {
+    case "$1" in ''|*[!0-9]*) return 1 ;; esac
+    [ "$(readlink -f "/proc/$1/exe" 2>/dev/null)" = "$(readlink -f "${_dingo_bin}")" ] \
+      && tr '\0' '\n' < "/proc/$1/environ" 2>/dev/null | grep -Fxq "CARDANO_DATABASE_PATH=${_database_path}"
+  }
   if [ -f "${_pid_file}" ]; then
     _pid="$(cat "${_pid_file}")"
-    if kill -0 "${_pid}" 2>/dev/null; then
+    if _is_dingo_pid "${_pid}"; then
       kill -TERM "${_pid}" 2>/dev/null || true
       _waited=0
-      while kill -0 "${_pid}" 2>/dev/null && [ "${_waited}" -lt 30 ]; do
+      while _is_dingo_pid "${_pid}" && [ "${_waited}" -lt 30 ]; do
         sleep 1
         _waited=$((_waited + 1))
       done
-      kill -0 "${_pid}" 2>/dev/null && kill -KILL "${_pid}" 2>/dev/null || true
+      _is_dingo_pid "${_pid}" && kill -KILL "${_pid}" 2>/dev/null || true
     fi
     rm -f "${_pid_file}"
   fi
