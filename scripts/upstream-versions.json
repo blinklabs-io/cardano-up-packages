@@ -15,11 +15,6 @@
     "tag_pattern": "",
     "version_prefix": ""
   },
-  "cardano-node-api": {
-    "repo": "blinklabs-io/cardano-node-api",
-    "tag_pattern": "v",
-    "version_prefix": ""
-  },
   "cardano-up": {
     "repo": "blinklabs-io/cardano-up",
     "tag_pattern": "v",
