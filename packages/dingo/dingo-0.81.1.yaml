@@ -80,7 +80,21 @@ postStartScript: |
     export DINGO_MESH_PORT="8080"
     export DINGO_UTXORPC_PORT="9090"
     nohup "${_dingo_bin}" serve >> "{{ .Paths.ContextDir }}/dingo.log" 2>&1 &
-    echo $! > "${_pid_file}"
+    _pid="$!"
+    echo "${_pid}" > "${_pid_file}"
+    _waited=0
+    while ! _is_dingo_pid "${_pid}" && [ "${_waited}" -lt 10 ]; do
+      if ! kill -0 "${_pid}" 2>/dev/null; then
+        break
+      fi
+      sleep 1
+      _waited=$((_waited + 1))
+    done
+    if ! _is_dingo_pid "${_pid}"; then
+      rm -f "${_pid_file}"
+      echo "dingo failed to remain running after startup" >&2
+      exit 1
+    fi
   fi
 preStopScript: |
   _dingo_bin="{{ .Paths.DataDir }}/dingo"
