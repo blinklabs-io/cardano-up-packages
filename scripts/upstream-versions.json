@@ -1,9 +1,4 @@
 {
-  "dingo": {
-    "repo": "blinklabs-io/dingo",
-    "tag_pattern": "v",
-    "version_prefix": ""
-  },
   "dmtrctl": {
     "repo": "demeter-run/cli",
     "tag_pattern": "v",
