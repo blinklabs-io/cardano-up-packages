@@ -90,7 +90,12 @@ postStartScript: |
       sleep 1
       _waited=$((_waited + 1))
     done
-    if ! _is_dingo_pid "${_pid}"; then
+    _stable=0
+    while _is_dingo_pid "${_pid}" && kill -0 "${_pid}" 2>/dev/null && [ "${_stable}" -lt 3 ]; do
+      sleep 1
+      _stable=$((_stable + 1))
+    done
+    if [ "${_stable}" -lt 3 ] || ! _is_dingo_pid "${_pid}"; then
       rm -f "${_pid_file}"
       echo "dingo failed to remain running after startup" >&2
       exit 1
