@@ -12,6 +12,6 @@ permissions:
 
 jobs:
   orchestrate:
-    uses: blinklabs-io/actions/.github/workflows/reuseable-check-versions-packages.yml@main
+    uses: blinklabs-io/actions/.github/workflows/reuseable-check-versions-packages.yml@d3aa875070b18acdcb31256100558d44c16b512f
     secrets:
       token: ${{ secrets.ORG_PROJECT_PAT }}
