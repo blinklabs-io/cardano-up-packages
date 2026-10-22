@@ -6,7 +6,7 @@ dependencies:
 installSteps:
   - docker:
       containerName: tx-submit-api
-      image: ghcr.io/blinklabs-io/tx-submit-api:0.22.1
+      image: ghcr.io/blinklabs-io/tx-submit-api:0.22.1@sha256:774fdb92a29f91c0a2aff1338caa1576f3eff718b742be44f09238dbe779dddd
       env:
         CARDANO_NETWORK: '{{ .Context.Network }}'
         CARDANO_NODE_SOCKET_PATH: /ipc/node.socket
