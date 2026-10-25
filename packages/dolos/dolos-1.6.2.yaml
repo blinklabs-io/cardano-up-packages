@@ -17,12 +17,20 @@ installSteps:
       args:
         - |
           BOOTSTRAP_MARKER=/data/.mithril-bootstrap-in-progress
-          if [ -e /data/wal ] && [ ! -e "$BOOTSTRAP_MARKER" ]; then
-            exec dolos daemon
+          VERIFIED_MARKER=/data/.mithril-bootstrap-verified
+          if [ -e /data/wal ]; then
+            if [ -e "$VERIFIED_MARKER" ]; then
+              exec dolos daemon
+            fi
+            if [ ! -e "$BOOTSTRAP_MARKER" ]; then
+              echo "Dolos data is not marked as Mithril-verified; back it up and re-bootstrap before starting." >&2
+              exit 1
+            fi
           fi
+          rm -f "$VERIFIED_MARKER"
           touch "$BOOTSTRAP_MARKER"
           dolos bootstrap --continue mithril --download-dir /data/.mithril
-          rm -f "$BOOTSTRAP_MARKER"
+          mv "$BOOTSTRAP_MARKER" "$VERIFIED_MARKER"
           exec dolos daemon
       binds:
         - '{{ .Paths.DataDir }}:/etc/dolos'
