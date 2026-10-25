@@ -1,0 +1,70 @@
+name: dolos
+version: 1.6.2
+description: Dolos is a Cardano data node
+dependencies:
+  - cardano-config >= 20251128
+installSteps:
+  - file:
+      filename: daemon.toml
+      source: files/daemon-v3.toml.gotmpl
+  - docker:
+      containerName: dolos
+      image: ghcr.io/txpipe/dolos:v1.6.2@sha256:9a4d0c728afe147c6bc54878828954dd6fe12955c878ea4d6aa447669b18cba8
+      command:
+        - /bin/sh
+        - -eu
+        - -c
+      args:
+        - |
+          BOOTSTRAP_MARKER=/data/.mithril-bootstrap-in-progress
+          VERIFIED_MARKER=/data/.mithril-bootstrap-verified
+          if [ -e /data/wal ]; then
+            if [ -e "$VERIFIED_MARKER" ]; then
+              exec dolos daemon
+            fi
+            if [ ! -e "$BOOTSTRAP_MARKER" ]; then
+              echo "Dolos data is not marked as Mithril-verified; back it up and re-bootstrap before starting." >&2
+              exit 1
+            fi
+          fi
+          rm -f "$VERIFIED_MARKER"
+          touch "$BOOTSTRAP_MARKER"
+          dolos bootstrap --continue mithril --download-dir /data/.mithril
+          mv "$BOOTSTRAP_MARKER" "$VERIFIED_MARKER"
+          exec dolos daemon
+      binds:
+        - '{{ .Paths.DataDir }}:/etc/dolos'
+        - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/dolos-data:/data'
+        - '{{ .Paths.ContextDir }}/dolos-ipc:/ipc'
+      ports:
+        - "30013"
+        - "50051"
+        - "3000"
+      pullOnly: false
+outputs:
+  - name: grpc
+    description: Dolos gRPC (UTxORPC) service
+    value: 'http://localhost:{{ index (index .Ports "dolos") "50051" }}'
+  - name: minibf
+    description: Dolos Blockfrost-compatible (minibf) HTTP API
+    value: 'http://localhost:{{ index (index .Ports "dolos") "3000" }}'
+  - name: relay
+    description: Dolos Ouroboros Node-to-Node service
+    value: 'localhost:{{ index (index .Ports "dolos") "30013" }}'
+  - name: socket-path
+    description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
+    value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
+preInstallScript: |
+  set -eu
+  DATA_DIR={{ .Paths.ContextDir }}/dolos-data
+  if [ -e "$DATA_DIR/db/wal" ]; then
+    echo "Dolos uses a legacy database layout; migrate or back up the database before upgrading." >&2
+    exit 1
+  fi
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
