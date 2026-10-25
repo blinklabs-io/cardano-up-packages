@@ -11,8 +11,19 @@ installSteps:
       containerName: dolos
       image: ghcr.io/txpipe/dolos:v1.6.2
       command:
-        - dolos
-        - daemon
+        - /bin/sh
+        - -eu
+        - -c
+      args:
+        - |
+          BOOTSTRAP_MARKER=/data/.mithril-bootstrap-in-progress
+          if [ -e /data/wal ] && [ ! -e "$BOOTSTRAP_MARKER" ]; then
+            exec dolos daemon
+          fi
+          touch "$BOOTSTRAP_MARKER"
+          dolos bootstrap --continue mithril --download-dir /data/.mithril
+          rm -f "$BOOTSTRAP_MARKER"
+          exec dolos daemon
       binds:
         - '{{ .Paths.DataDir }}:/etc/dolos'
         - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
@@ -37,28 +48,12 @@ outputs:
     description: Path to the Dolos Ouroboros Node-to-Client UNIX socket
     value: '{{ .Paths.ContextDir }}/dolos-ipc/dolos.socket'
 preInstallScript: |
-  set -e
+  set -eu
   DATA_DIR={{ .Paths.ContextDir }}/dolos-data
-  # Skip the snapshot download if the node storage is already populated
-  test -e "$DATA_DIR/wal" && exit 0
-  echo "Downloading snapshot from TxPipe"
-  # Download and extract into a staging directory so an interrupted run never
-  # leaves a partial snapshot in the live storage path (which would otherwise
-  # be picked up on the next install and start Dolos with incomplete data).
-  STAGING_DIR="$DATA_DIR.tmp"
-  rm -rf "$STAGING_DIR"
-  mkdir -p "$STAGING_DIR"
-  cd "$STAGING_DIR"
-  curl --fail --location --retry 3 --retry-delay 5 --output latest.tar.gz \
-    https://dolos-snapshots.txpipe.cloud/v3/{{ .Context.NetworkMagic }}/full/latest.tar.gz
-  echo "Extracting snapshot"
-  tar xzf latest.tar.gz
-  rm -f latest.tar.gz
-  # Atomically promote the fully-extracted snapshot into place only after tar
-  # has completed successfully.
-  rm -rf "$DATA_DIR"
-  mv "$STAGING_DIR" "$DATA_DIR"
-  echo "Snapshot extraction complete"
+  if [ -e "$DATA_DIR/db/wal" ]; then
+    echo "Dolos uses a legacy database layout; migrate or back up the database before upgrading." >&2
+    exit 1
+  fi
 tags:
   - docker
   - linux
