@@ -1,0 +1,14 @@
+name: bursa
+version: 0.21.1
+description: Programmatic Cardano wallet library and CLI by Blink Labs
+installSteps:
+  - file:
+      binary: true
+      filename: bursa
+      url: 'https://github.com/blinklabs-io/bursa/releases/download/v{{ .Package.Version }}/bursa-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}.tar.gz'
+      archive: tar.gz
+      archivePath: bursa
+tags:
+  - linux
+  - amd64
+  - arm64
