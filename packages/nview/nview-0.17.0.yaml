@@ -1,0 +1,28 @@
+name: nview
+version: 0.17.0
+description: Terminal UI for monitoring Cardano nodes
+installSteps:
+  - file:
+      binary: true
+      filename: .nview-bin
+      url: 'https://github.com/blinklabs-io/nview/releases/download/v{{ .Package.Version }}/nview-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}'
+  - file:
+      binary: true
+      filename: nview
+      content: |
+        #!/usr/bin/env bash
+        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
+        exec "{{ .Paths.DataDir }}/.nview-bin" "${@}"
+  - file:
+      binary: true
+      filename: dingo-nview
+      content: |
+        #!/usr/bin/env bash
+        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
+        export CARDANO_NODE_BINARY="${CARDANO_NODE_BINARY:-dingo}"
+        exec "{{ .Paths.DataDir }}/.nview-bin" "${@}"
+tags:
+  - linux
+  - darwin
+  - amd64
+  - arm64
