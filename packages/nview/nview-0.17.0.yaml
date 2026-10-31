@@ -13,6 +13,14 @@ installSteps:
         #!/usr/bin/env bash
         export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
         exec "{{ .Paths.DataDir }}/.nview-bin" "${@}"
+  - file:
+      binary: true
+      filename: dingo-nview
+      content: |
+        #!/usr/bin/env bash
+        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
+        export CARDANO_NODE_BINARY="${CARDANO_NODE_BINARY:-dingo}"
+        exec "{{ .Paths.DataDir }}/.nview-bin" "${@}"
 tags:
   - linux
   - darwin
