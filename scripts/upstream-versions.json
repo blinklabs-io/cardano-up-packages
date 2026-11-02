@@ -19,5 +19,10 @@
     "repo": "CardanoSolutions/ogmios",
     "tag_pattern": "v",
     "version_prefix": ""
+  },
+  "oura": {
+    "repo": "txpipe/oura",
+    "tag_pattern": "v",
+    "version_prefix": ""
   }
 }
