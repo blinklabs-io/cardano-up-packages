@@ -1,0 +1,29 @@
+name: txtop
+version: 0.17.0
+description: Mempool inspector for Cardano nodes
+installSteps:
+  - file:
+      binary: true
+      filename: .txtop-bin
+      url: 'https://github.com/blinklabs-io/txtop/releases/download/v{{ .Package.Version }}/txtop-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}'
+  - file:
+      binary: true
+      filename: txtop
+      content: |
+        #!/usr/bin/env bash
+        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
+        export CARDANO_NODE_SOCKET_PATH="${CARDANO_NODE_SOCKET_PATH:-{{ .Paths.ContextDir }}/node-ipc/node.socket}"
+        exec "{{ .Paths.DataDir }}/.txtop-bin" "${@}"
+  - file:
+      binary: true
+      filename: dingo-txtop
+      content: |
+        #!/usr/bin/env bash
+        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
+        export CARDANO_NODE_SOCKET_PATH="${CARDANO_NODE_SOCKET_PATH:-{{ .Paths.ContextDir }}/node-ipc/dingo.socket}"
+        exec "{{ .Paths.DataDir }}/.txtop-bin" "${@}"
+tags:
+  - linux
+  - darwin
+  - amd64
+  - arm64
