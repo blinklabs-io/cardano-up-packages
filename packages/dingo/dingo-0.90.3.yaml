@@ -5,6 +5,7 @@ dependencies:
   - cardano-config >= 20251128
   - cardano-cli >= 10.12.0.0
   - nview >= 0.17.0
+  - txtop >= 0.17.0
 installSteps:
   - file:
       binary: true
@@ -12,18 +13,6 @@ installSteps:
       url: 'https://github.com/blinklabs-io/dingo/releases/download/v{{ .Package.Version }}/dingo-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}.tar.gz'
       archive: tar.gz
       archivePath: dingo
-  - file:
-      binary: true
-      filename: .txtop-bin
-      url: 'https://github.com/blinklabs-io/txtop/releases/download/v0.16.0/txtop-v0.16.0-{{ .System.OS }}-{{ .System.ARCH }}'
-  - file:
-      binary: true
-      filename: dingo-txtop
-      content: |
-        #!/usr/bin/env bash
-        export CARDANO_NETWORK="${CARDANO_NETWORK:-{{ .Context.Network }}}"
-        export CARDANO_NODE_SOCKET_PATH="${CARDANO_NODE_SOCKET_PATH:-{{ .Paths.ContextDir }}/node-ipc/dingo.socket}"
-        exec "{{ .Paths.DataDir }}/.txtop-bin" "${@}"
 outputs:
   - name: blockfrost
     description: Dingo Blockfrost-compatible REST API
