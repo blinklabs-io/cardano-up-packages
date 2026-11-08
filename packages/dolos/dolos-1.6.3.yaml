@@ -9,7 +9,7 @@ installSteps:
       source: files/daemon-v3.toml.gotmpl
   - docker:
       containerName: dolos
-      image: ghcr.io/txpipe/dolos:v1.6.3@sha256:9a4d0c728afe147c6bc54878828954dd6fe12955c878ea4d6aa447669b18cba8
+      image: ghcr.io/txpipe/dolos:v1.6.3@sha256:69f6da111c0e5cb83d0acbc138d8bd82fabc4c6ff77384d0f4eb237ed9620aca
       command:
         - /bin/sh
         - -eu
