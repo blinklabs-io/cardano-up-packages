@@ -62,6 +62,18 @@ sed -i "s/:\([^v]\)${OLD_VERSION}/:\1${NEW_VERSION}/g" "$NEW_FILE"
 sed -i "s/:${OLD_VERSION}\([^0-9]\)/:${NEW_VERSION}\1/g" "$NEW_FILE"
 sed -i "s/:${OLD_VERSION}$/:${NEW_VERSION}/g" "$NEW_FILE"
 
+# Re-resolve pinned image digests. A digest copied from the previous version
+# makes Docker run the old image whatever the tag says.
+while IFS= read -r ref; do
+  image_tag="${ref%@sha256:*}"
+  if ! new_digest=$(docker buildx imagetools inspect "$image_tag" 2>/dev/null | awk '/^Digest:/ {print $2; exit}') || [[ -z "$new_digest" ]]; then
+    echo "ERROR: Could not resolve digest for $image_tag" >&2
+    rm -f "$NEW_FILE"
+    exit 1
+  fi
+  sed -i "s#${ref}#${image_tag}@${new_digest}#g" "$NEW_FILE"
+done < <(grep -oE '[A-Za-z0-9._/:-]+@sha256:[0-9a-f]{64}' "$NEW_FILE" | sort -u)
+
 # Handle cardano-config special case (revision suffix in image tag)
 # e.g., :20251128-1 -> :20260115-1; PACKAGE_IMAGE_REVISION overrides the 1.
 if [[ "$PACKAGE_NAME" == "cardano-config" ]]; then
