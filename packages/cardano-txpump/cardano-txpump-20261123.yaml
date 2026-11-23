@@ -1,0 +1,63 @@
+name: cardano-txpump
+version: 20261123
+description: Configurable Cardano transaction workload generator by Blink Labs
+dependencies:
+  - cardano-config >= 20251128
+  - cardano-node >= 10.1.0
+installSteps:
+  - config:
+      filename: txpump-genesis/README.txt
+      content: |
+        Place funded genesis UTxO data here before starting cardano-txpump.
+
+        TXPUMP_GENESIS_UTXO_FILE (set to /genesis for this package) accepts
+        either a directory of JSON files, a single JSON file listing explicit
+        UTxOs, or a Shelley genesis JSON file with "initialFunds".
+
+        An explicit UTxO entry needs a 32-byte hex txHash, an output index, an
+        amount in lovelace, and optionally a hex address. If address is
+        omitted, txHash must match the Blake2b-256 hash of a loaded signing
+        key's address.
+
+        Signing keys for each funded address must sit beside the UTxO JSON
+        (or anywhere in this directory) using the names:
+          genesis.<n>.skey
+          genesis.<n>.vkey
+          genesis.<n>.addr.info
+
+        cardano-txpump exits at startup if it cannot find spendable UTxOs
+        matched to signing keys. Keep signing key files out of source control.
+
+        See https://github.com/blinklabs-io/cardano-txpump for the full list
+        of supported environment variables and workload types.
+  - docker:
+      containerName: cardano-txpump
+      image: ghcr.io/blinklabs-io/cardano-txpump:main@sha256:3e6ecc94aaf2f7912f3c77d0ae609a55d66d6830fd64c5851aac32c16ccf9063
+      env:
+        TXPUMP_NODE_ADDR: /ipc/node.socket
+        TXPUMP_NETWORK_MAGIC: '{{ .Context.NetworkMagic }}'
+        TXPUMP_GENESIS_UTXO_FILE: /genesis
+        TXPUMP_GENESIS_FILE: /config/shelley-genesis.json
+        TXPUMP_CONWAY_GENESIS_FILE: /config/conway-genesis.json
+        TXPUMP_ALONZO_GENESIS_FILE: /config/alonzo-genesis.json
+        TXPUMP_TYPES: payment
+        TXPUMP_LOG_DIR: /logs
+      binds:
+        - '{{ .Paths.ContextDir }}/node-ipc:/ipc'
+        - '{{ .Paths.ContextDir }}/config/{{ .Context.Network }}:/config'
+        - '{{ .Paths.ContextDir }}/txpump-genesis:/genesis'
+        - '{{ .Paths.ContextDir }}/txpump-logs:/logs'
+      pullOnly: false
+outputs:
+  - name: log_path
+    description: Path to the cardano-txpump structured transaction log
+    value: '{{ .Paths.ContextDir }}/txpump-logs/txpump.log'
+  - name: genesis_utxo_dir
+    description: Directory for genesis UTxO data and signing keys
+    value: '{{ .Paths.ContextDir }}/txpump-genesis'
+tags:
+  - docker
+  - linux
+  - darwin
+  - amd64
+  - arm64
