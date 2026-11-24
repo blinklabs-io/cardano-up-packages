@@ -59,7 +59,7 @@ postStartScript: |
     export CARDANO_SOCKET_PATH="{{ .Paths.ContextDir }}/node-ipc/dingo.socket"
     export CARDANO_BIND_ADDR="0.0.0.0"
     export CARDANO_PRIVATE_BIND_ADDR="127.0.0.1"
-    export CARDANO_RELAY_PORT="{{ .Ports.native.relay }}"
+    export CARDANO_PORT="{{ .Ports.native.relay }}"
     export CARDANO_PRIVATE_PORT="{{ .Ports.native.socket }}"
     export DINGO_STORAGE_MODE="api"
     export DINGO_BLOCKFROST_PORT="{{ .Ports.native.blockfrost }}"
