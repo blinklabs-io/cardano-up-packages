@@ -4,20 +4,46 @@ description: Configurable Cardano transaction workload generator by Blink Labs
 dependencies:
   - cardano-config >= 20251128
   - cardano-node >= 10.1.0
+preInstallScript: |
+  set -e
+  # The cardano-txpump image writes /logs/txpump.log as whatever uid the
+  # container runs under (cardano-up forces every container to run as the
+  # invoking host user, not the image's baked-in uid 1000), but nothing else
+  # creates this bind source directory before the docker install step below.
+  # Pre-create and open it up so the write never fails because of a stray
+  # restrictive umask or a mismatched uid on the host.
+  mkdir -p '{{ .Paths.ContextDir }}/txpump-logs'
+  chmod 0777 '{{ .Paths.ContextDir }}/txpump-logs'
 installSteps:
   - config:
       filename: txpump-genesis/README.txt
       content: |
-        Place funded genesis UTxO data here before starting cardano-txpump.
+        Place funded genesis UTxO data here, then run `cardano-up install
+        cardano-txpump` (or `cardano-up up` if it is already installed).
+
+        `cardano-up install` starts this container immediately. If this
+        directory is still empty at that point, cardano-txpump exits and
+        Docker's restart-unless-stopped policy keeps retrying it with
+        backoff, so adding the files afterwards is fine too: no extra
+        command is required, though `cardano-up up` restarts it right away
+        instead of waiting for the next automatic retry.
 
         TXPUMP_GENESIS_UTXO_FILE (set to /genesis for this package) accepts
         either a directory of JSON files, a single JSON file listing explicit
         UTxOs, or a Shelley genesis JSON file with "initialFunds".
 
-        An explicit UTxO entry needs a 32-byte hex txHash, an output index, an
-        amount in lovelace, and optionally a hex address. If address is
-        omitted, txHash must match the Blake2b-256 hash of a loaded signing
-        key's address.
+        An explicit UTxO entry needs a 32-byte hex txHash, an output index,
+        an amount in lovelace, and optionally a hex address. Always set
+        address to the hex-encoded address of one of your genesis.<n>.skey
+        keys; that is how an entry is matched to the key that spends it. The
+        only exception is data produced by the testnet-generation tool for
+        genesis-funded ("initial funds") outputs: those are not created by a
+        real transaction, so the ledger defines their on-chain txHash as the
+        Blake2b-256 hash of the funded address itself (index 0), and an
+        entry with no address is matched against loaded keys that way
+        instead. Do not hand-construct a txHash this way for a UTxO created
+        by an ordinary transaction; use its real transaction hash and set
+        address explicitly.
 
         Signing keys for each funded address must sit beside the UTxO JSON
         (or anywhere in this directory) using the names:
