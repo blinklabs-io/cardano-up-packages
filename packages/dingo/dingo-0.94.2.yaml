@@ -13,25 +13,31 @@ installSteps:
       url: 'https://github.com/blinklabs-io/dingo/releases/download/v{{ .Package.Version }}/dingo-v{{ .Package.Version }}-{{ .System.OS }}-{{ .System.ARCH }}.tar.gz'
       archive: tar.gz
       archivePath: dingo
+ports:
+  - blockfrost
+  - grpc
+  - mesh
+  - relay
+  - socket
 outputs:
   - name: blockfrost
     description: Dingo Blockfrost-compatible REST API
-    value: 'http://localhost:3000'
+    value: 'http://localhost:{{ .Ports.native.blockfrost }}'
   - name: grpc
     description: Dingo gRPC service
-    value: 'http://localhost:9090'
+    value: 'http://localhost:{{ .Ports.native.grpc }}'
   - name: mesh
     description: Dingo Mesh (Rosetta) REST API
-    value: 'http://localhost:8080'
+    value: 'http://localhost:{{ .Ports.native.mesh }}'
   - name: relay
     description: Dingo Ouroboros Node-to-Node service
-    value: 'localhost:3001'
+    value: 'localhost:{{ .Ports.native.relay }}'
   - name: socket-path
     description: Path to the Dingo Ouroboros Node-to-Client UNIX socket
     value: '{{ .Paths.ContextDir }}/node-ipc/dingo.socket'
   - name: socket-port
     description: Dingo Ouroboros Node-to-Client service over TCP
-    value: 'localhost:3002'
+    value: 'localhost:{{ .Ports.native.socket }}'
 postStartScript: |
   set -e
   mkdir -p "{{ .Paths.ContextDir }}/config/{{ .Context.Network }}" "{{ .Paths.ContextDir }}/node-ipc" "{{ .Paths.ContextDir }}/dingo-data"
@@ -53,10 +59,12 @@ postStartScript: |
     export CARDANO_SOCKET_PATH="{{ .Paths.ContextDir }}/node-ipc/dingo.socket"
     export CARDANO_BIND_ADDR="0.0.0.0"
     export CARDANO_PRIVATE_BIND_ADDR="127.0.0.1"
+    export CARDANO_PORT="{{ .Ports.native.relay }}"
+    export CARDANO_PRIVATE_PORT="{{ .Ports.native.socket }}"
     export DINGO_STORAGE_MODE="api"
-    export DINGO_BLOCKFROST_PORT="3000"
-    export DINGO_MESH_PORT="8080"
-    export DINGO_UTXORPC_PORT="9090"
+    export DINGO_BLOCKFROST_PORT="{{ .Ports.native.blockfrost }}"
+    export DINGO_MESH_PORT="{{ .Ports.native.mesh }}"
+    export DINGO_UTXORPC_PORT="{{ .Ports.native.grpc }}"
     nohup "${_dingo_bin}" serve >> "{{ .Paths.ContextDir }}/dingo.log" 2>&1 &
     _pid="$!"
     echo "${_pid}" > "${_pid_file}"
